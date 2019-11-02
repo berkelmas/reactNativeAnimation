@@ -4,7 +4,11 @@ import {
   Text,
   View,
   Image,
-  Dimensions
+  Dimensions,
+  TextInput,
+  Keyboard,
+  Animated as ReactAnimated,
+  Easing as ReactEasing
 } from 'react-native';
 
 import Animated, { Easing } from 'react-native-reanimated';
@@ -14,6 +18,8 @@ import { runTiming } from './helpers/runTiming';
 
 export default function App() {
   const buttonOpacity = new Animated.Value(1);
+  const [viewTransformY] = React.useState(new ReactAnimated.Value(0));
+
   const handleStateChange = Animated.event([
     {
       nativeEvent : ({state}) => Animated.block([
@@ -28,7 +34,38 @@ export default function App() {
         Animated.cond(Animated.eq(state, State.END), Animated.set(buttonOpacity, runTiming(new Animated.Clock(), buttonOpacity, 1)))
       ])
     }
-  ])
+  ]);
+
+  React.useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', _keyboardDidShow);
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', _keyboardDidHide);
+  
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    }
+  }, []);
+
+  const _keyboardDidShow = () => {
+    ReactAnimated.timing(
+      viewTransformY,
+      {
+        toValue : -300,
+        duration : 400,
+        easing : ReactEasing.ease
+      }
+    ).start();
+  }
+
+  const _keyboardDidHide = () => {
+    ReactAnimated.timing(
+      viewTransformY,
+      {
+        toValue : 0,
+        duration : 400
+      }
+    ).start();
+  };
 
   const imageBottomMargin = Animated.interpolate(buttonOpacity, {
     inputRange: [0, 1],
@@ -56,7 +93,8 @@ export default function App() {
   })
 
   return (
-    <View style={styles.container}>
+    
+<ReactAnimated.View style={{...styles.container, transform : [{translateY : viewTransformY}]}}>      
       
       <Animated.View style={{...StyleSheet.absoluteFill, zIndex : 1, bottom : imageBottomMargin}}>
         <Image 
@@ -100,13 +138,29 @@ export default function App() {
         </TapGestureHandler>
 
         <Animated.View style={{...styles.loginForm}}>
-          
+          <TextInput 
+            placeholder={'username'}
+            placeholderTextColor="gray"
+            style={{...styles.input}}
+          />
+          <TextInput 
+            placeholder={'password'}
+            placeholderTextColor="gray"
+            style={{...styles.input}}
+          />
+
+          <TapGestureHandler>
+            <View style={{...styles.loginButton}}>
+              <Text style={{color : 'black', fontSize : 20}}>LOGIN</Text>
+            </View>
+          </TapGestureHandler>
+
         </Animated.View>
 
       </Animated.View>
 
 
-    </View>
+    </ReactAnimated.View>
   );
 }
 
@@ -171,5 +225,34 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
 
     elevation: 5,
+  },
+
+  input: {
+    borderWidth : 1,
+    borderColor : 'gray',
+    borderRadius : 30,
+    paddingVertical : 10,
+    paddingHorizontal : 20,
+    marginVertical : 10,
+    fontSize : 16
+  },
+  loginButton : {
+    backgroundColor : 'white',
+    borderRadius : 20,
+    paddingVertical : 10,
+    marginVertical : 10,
+    justifyContent : 'center',
+    alignItems : 'center',
+
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+
+    elevation: 5,
+    
   }
 });
